@@ -60,4 +60,4 @@ jobs:
         with:
           app-name: 'Linkedinpostapi'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_C3664B9E1D9B45AF8AA37A3FC3B179FF }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_98E905FA892E43C586DAB2A405DB5F70 }}
