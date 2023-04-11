@@ -1,41 +1,44 @@
-from typing import Optional
-
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from pydantic import BaseModel
+import requests
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-fakedb = []
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-class Course(BaseModel):
-    id:int
-    name:str
-    price:float
-    is_early_bird: Optional[bool] = None
- 
+API_ENDPOINT = "https://api.openai.com/v1/chat/completions"
 
-@app.get("/")
-def get_home():
-    return {"message": "helloworld"}
+class ChatGPTRequest(BaseModel):
+    prompt: str
+    key:str
 
+@app.post("/chatgpt")
+async def chatgpt(request: Request, chat_gpt_request: ChatGPTRequest):
+    print(f"Received request: {request.method} {request.url.path}")
 
-@app.get("/courses")
-def get_courses():
-    return fakedb
+    prompt = chat_gpt_request.prompt
+    key = chat_gpt_request.key
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {key}",
+    }
 
+    data = {
+        "model": "gpt-3.5-turbo",
+        "messages": [{"role": "user", "content": prompt}]
+    }
 
-@app.get("/courses/{course_id}")
-def get_course(course_id:int):
-    course = course_id - 1
-    return fakedb[course]
+    response = requests.post(API_ENDPOINT, headers=headers, json=data)
 
-
-@app.post("/courses")
-def add_course(course: Course):
-    fakedb.append(course.dict())
-    return fakedb[-1]
-
-@app.delete("/courses")
-def delete_course(course_id: int):
-    fakedb.pop(course_id - 1)
-    return {"message": "deleted successfully"}    
+    if response.status_code == 200:
+        response_data = response.json()
+        return {"response": response_data['choices'][0]['message']["content"]}
+    else:
+        return {"error": "Unable to generate a response."}, 500
